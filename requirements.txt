@@ -1,0 +1,8 @@
+flask
+flasgger
+flask_restful
+gunicorn
+pyairtable
+scikit-learn
+torch
+transformers
