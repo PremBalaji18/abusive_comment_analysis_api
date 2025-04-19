@@ -6,7 +6,23 @@ import torch
 
 app = Flask(__name__)
 api = Api(app)
-swagger = Swagger(app)
+
+# Explicit Swagger configuration
+swagger_config = {
+    "headers": [],
+    "specs": [
+        {
+            "endpoint": "apispec_1",
+            "route": "/apispec_1.json",
+            "rule_filter": lambda rule: True,
+            "model_filter": lambda tag: True,
+        }
+    ],
+    "static_url_path": "/flasgger_static",
+    "swagger_ui": True,
+    "specs_route": "/apidocs/"
+}
+swagger = Swagger(app, config=swagger_config)
 
 # Define the path to the model directory
 MODEL_DIR = "model/"
@@ -79,12 +95,8 @@ class ToxicityAnalysis(Resource):
                           type: number
                           description: Probability of the text being obscene
                         Prob (Threat):
- STREET_NUMBER: 1234
- STREET_NAME: Main St
- CITY: Springfield
- STATE: IL
- ZIP_CODE: 62701
- COUNTRY: USA
+                          type: number
+                          description: Probability of the text being a threat
                         Prob (Insult):
                           type: number
                           description: Probability of the text being an insult
