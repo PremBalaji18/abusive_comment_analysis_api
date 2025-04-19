@@ -1,13 +1,23 @@
-from flask import Flask, jsonify, request
-from flask_restful import Api, Resource
-from flasgger import Swagger
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from flasgger import Swagger
+from flask_restful import Api, Resource
+from flask import Flask, jsonify, request
+import logging
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning,
+                        module="transformers.utils.generic")
+
+
+# Configure logging
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 api = Api(app)
 
-# Explicit Swagger configuration
+# Swagger configuration
 swagger_config = {
     "headers": [],
     "specs": [
@@ -25,40 +35,50 @@ swagger_config = {
 swagger = Swagger(app, config=swagger_config)
 
 # Define the path to the model directory
-# Define the path to the model directory
 MODEL_DIR = "model/"
 
 # Load tokenizer and model
 try:
+    logger.info("Loading tokenizer and model from %s", MODEL_DIR)
     tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
     model = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR)
-    model.eval()  # Optimize for inference
+    model.eval()
+    logger.info("Model loaded successfully")
 except Exception as e:
+    logger.error("Failed to load tokenizer or model: %s", e)
     raise RuntimeError(f"Failed to load tokenizer or model: {e}")
 
 # Define labels for toxicity categories
-labels = ["abuse", "severe_abuse", "obscene", "threat", "insult", "identity_attack"]
+labels = ["abuse", "severe_abuse", "obscene",
+          "threat", "insult", "identity_attack"]
+
 
 def get_toxicity_scores(texts):
     """
     Predicts toxicity scores for a list of text inputs.
-    
+
     :param texts: List of text strings or single string
     :return: List of dictionaries containing toxicity scores
     """
+    logger.info("Starting toxicity score calculation")
     if isinstance(texts, str):
         texts = [texts]
 
     try:
-        inputs = tokenizer(texts, return_tensors="pt", truncation=True, padding=True, max_length=512)
+        inputs = tokenizer(texts, return_tensors="pt",
+                           truncation=True, padding=True, max_length=512)
         with torch.no_grad():
             outputs = model(**inputs)
             logits = outputs.logits
             probabilities = torch.sigmoid(logits).tolist()
-        results = [dict(zip(labels, [round(prob, 2) for prob in probs])) for probs in probabilities]
+        results = [dict(zip(labels, [round(prob, 2) for prob in probs]))
+                   for probs in probabilities]
+        logger.info("Toxicity scores calculated successfully")
         return results
     except Exception as e:
+        logger.error("Error in get_toxicity_scores: %s", e)
         raise
+
 
 class ToxicityAnalysis(Resource):
     def get(self):
@@ -110,34 +130,35 @@ class ToxicityAnalysis(Resource):
           500:
             description: Server error during prediction
         """
+        logger.info("Received request for toxicity analysis")
         text = request.args.get('text', '').strip()
 
         if not text:
-            return jsonify({"error": "Text is required"}), 400
+            logger.warning("No text provided")
+            return {"error": "Text is required"}, 400
 
-        # Basic input validation
         if len(text) > 10000:
-            return jsonify({"error": "Text is too long (max 10,000 characters)"}), 400
+            logger.warning("Text too long: %d characters", len(text))
+            return {"error": "Text is too long (max 10,000 characters)"}, 400
 
         try:
-            # Get toxicity scores
+            logger.info("Processing text: %s", text[:50])
             results = get_toxicity_scores(text)
             toxicity_results = {
                 f"Prob ({label.replace('_', ' ').title()})": score
                 for label, score in results[0].items()
             }
-
-            # Prepare response
             response = {
                 'original_text': text,
                 'toxicity_results': toxicity_results
             }
-            return jsonify(response)
-
+            logger.info("Successfully processed request")
+            return response
         except Exception as e:
-            return jsonify({"error": f"Error during prediction: {e}"}), 500
+            logger.error("Error during prediction: %s", e)
+            return {"error": f"Error during prediction: {str(e)}"}, 500
 
-# Adding the resource to the API
+
 api.add_resource(ToxicityAnalysis, "/toxicityanalysis")
 
 if __name__ == "__main__":
