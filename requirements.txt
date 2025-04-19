@@ -1,8 +1,8 @@
-flask
-flasgger==0.9.5
-flask_restful
-gunicorn
-pyairtable
-scikit-learn
-torch
-transformers
+flask==2.2.5
+flask-restful==0.3.10
+git+https://github.com/flasgger/flasgger.git@master
+transformers==4.35.2
+torch==2.2.2
+gunicorn==21.2.0
+pyyaml==6.0.1
+numpy==1.26.4
