@@ -25,12 +25,14 @@ swagger_config = {
 swagger = Swagger(app, config=swagger_config)
 
 # Define the path to the model directory
+# Define the path to the model directory
 MODEL_DIR = "model/"
 
 # Load tokenizer and model
 try:
     tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
     model = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR)
+    model.eval()  # Optimize for inference
 except Exception as e:
     raise RuntimeError(f"Failed to load tokenizer or model: {e}")
 

@@ -1,7 +1,7 @@
 flask==2.2.5
 flask-restful==0.3.10
 git+https://github.com/flasgger/flasgger.git@master
-transformers==4.35.2
+transformers==4.44.2  # Latest stable version as of April 2025
 torch==2.2.2
 gunicorn==21.2.0
 pyyaml==6.0.1
