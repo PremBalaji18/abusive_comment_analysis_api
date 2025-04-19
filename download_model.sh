@@ -1,8 +1,7 @@
 #!/bin/bash
+set -e  # Exit on error
 echo "Downloading model files from Google Drive..."
-
-# Install gdown (Google Drive downloader)
-pip install gdown
-
-# Replace with your Google Drive folder ID
-gdown --folder https://drive.google.com/drive/folders/1TDffvXwAn8sl6QIqLX7OjbUvFAYmdXkU?usp=sharing -O model/
+pip install gdown || { echo "Failed to install gdown"; exit 1; }
+gdown --folder https://drive.google.com/drive/folders/1TDffvXwAn8sl6QIqLX7OjbUvFAYmdXkU?usp=sharing -O model/ || { echo "Failed to download model files"; exit 1; }
+echo "Model files downloaded successfully"
+ls -l model/  # List downloaded files for debugging
