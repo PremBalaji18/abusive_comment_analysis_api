@@ -6,3 +6,4 @@ torch==2.2.2
 gunicorn==21.2.0
 pyyaml==6.0.1
 numpy==1.26.4
+gdown>=5.2.0
